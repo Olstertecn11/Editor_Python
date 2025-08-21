@@ -1,3 +1,3 @@
 const { app } = require('electron');
-const { CrearVentana } = require('./init');
-app.whenReady().then(CrearVentana)
+const { window } = require('./window');
+app.whenReady().then(window)

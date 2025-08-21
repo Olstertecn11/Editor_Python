@@ -1,4 +1,5 @@
 const { MicaBrowserWindow: BrowserWindow } = require('mica-electron');
+const path = require('path');
 
 function window() {
   const win = new BrowserWindow({
@@ -6,15 +7,16 @@ function window() {
     height: 600,
     title: 'RunCode',
     minWidth: 600,
-    // autoHideMenuBar: true,
+    autoHideMenuBar: true,
     icon: './assets/icons/win/icono.ico',
     transparent: true,
     backgroundColor: '#00000000',
     show: false, // 👈 clave
     webPreferences: {
-      nodeIntegration: true,
+      preload: path.join(__dirname, 'preload.js'),
       nodeIntegrationInWorker: true,
-      contextIsolation: false
+      contextIsolation: true,
+      nodeIntegration: true
     },
   });
 

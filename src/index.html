@@ -4,46 +4,78 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=h2, initial-scale=1.0">
-  <title>Python Editor</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python/JS Editor</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <div class="container">
-    <div class="editor" id="editor">
 
+  <div class="toolbar">
+    <!-- Themes -->
+    <div class="dropdown">
+      <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Themes</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="editor.setTheme('ace/theme/dracula')">Dracula</a>
+        <a href="#" onclick="editor.setTheme('ace/theme/cappuccino')">Cappuccino</a>
+        <a href="#" onclick="editor.setTheme('ace/theme/tokyo-night')">Tokyo Night</a>
+      </div>
     </div>
+
+    <!-- Modes (Runner) -->
+    <div class="dropdown">
+      <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Modes</button>
+      <div class="dropdown-content">
+        <a class="lang-button" href="#" id="btn-py" onclick="setLanguage(this,'python')">Python</a>
+        <a class="lang-button" href="#" id="btn-js" onclick="setLanguage(this,'javascript')">JavaScript</a>
+      </div>
+    </div>
+
+    <div class="dropdown">
+      <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Syntax</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="editor.session.setMode('ace/mode/html')">HTML</a>
+        <a href="#" onclick="editor.session.setMode('ace/mode/css')">CSS</a>
+      </div>
+    </div>
+
+    <!-- Tools -->
+    <div class="dropdown">
+      <button class="dropbtn" aria-haspopup="true" aria-expanded="false">Tools</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="editor.setKeyboardHandler('ace/keyboard/vim')">Vim Mode</a>
+        <a href="#" onclick="editor.setKeyboardHandler(null)">Disable Vim Mode</a>
+        <a href="#" onclick="window.devtools.toggle('detach')">DevTools</a>
+      </div>
+    </div>
+
+
+    <span id="lang-notifier">python</span>
+  </div>
+
+  <div class="container">
+    <div class="editor" id="editor"></div>
     <div id="result">
       <h2>OUTPUT</h2>
-      <div id="content">
-
-      </div>
-
+      <div id="content"></div>
     </div>
   </div>
 
-  <script src="assets/ace.js"></script>
-  <script src="assets/ext-language_tools.js"></script>
-  <script src="assets/mode-python.js"></script>
-  <script src="assets/themes/theme-dracula.js"></script>
-  <script src="assets/ext-vim.js"></script>
-  <script src="js/main.js"></script>
+  <!-- JS -->
+  <script src="assets/dropdown.js" defer></script>
 
-  <script>
-    var langTools = ace.require("ace/ext/language_tools");
-    let editor = ace.edit("editor");
-    editor.setTheme("ace/theme/dracula");
-    editor.session.setMode("ace/mode/python");
-    editor.setOptions({
-      enableBasicAutocompletion: true,
-      enableSnippets: true,
-      enableLiveAutocompletion: true,
-      useVimBindings: true
-    });
+  <!-- ACE (con defer para orden/DOM) -->
+  <script src="assets/ace.js" defer></script>
+  <script src="assets/ext-language_tools.js" defer></script>
 
-  </script>
+  <!-- Themes -->
+  <script src="assets/themes/theme-dracula.js" defer></script>
+  <script src="assets/themes/theme-cappuccino.js" defer></script>
+  <script src="assets/themes/theme-tokyo-night.js" defer></script>
+
+  <script src="assets/ext-vim.js" defer></script>
+
+  <script src="js/main.js" defer></script>
 </body>
 
 </html>

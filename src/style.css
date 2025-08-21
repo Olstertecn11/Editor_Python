@@ -8,7 +8,119 @@ html,
 body,
 .container {
   background: transparent !important;
-  /* 👈 heredan transparencia */
+}
+
+.toolbar {
+  width: 100%;
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px 8px;
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropbtn {
+  appearance: none;
+  background: rgba(26, 27, 38, 0.6);
+  color: #c0caf5;
+  /* texto claro */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font: 500 14px/1 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform .06s ease, background .15s ease, border-color .15s ease;
+}
+
+.lang-button.active {
+  color: #7aa2f7;
+}
+
+#lang-notifier {
+  background: #a7a116d9;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  color: white;
+  font-family: sans-serif;
+  font-size: 12px;
+}
+
+.dropbtn::after {
+  content: "▾";
+  opacity: 0.7;
+  transition: transform .15s ease;
+}
+
+.dropdown.open .dropbtn::after {
+  transform: rotate(180deg);
+}
+
+.dropbtn:hover {
+  background: rgba(42, 44, 60, 0.7);
+  border-color: rgba(122, 162, 247, 0.35);
+}
+
+.dropdown-content {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 180px;
+  padding: 6px;
+  background: rgba(15, 16, 24, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  display: none;
+  z-index: 1001;
+  animation: fadeInUp .12s ease-out;
+}
+
+.dropdown.open .dropdown-content {
+  display: block;
+}
+
+/* Items */
+.dropdown-content a {
+  display: block;
+  padding: 8px 10px;
+  color: #c0caf5;
+  text-decoration: none;
+  font-family: sans-serif !important;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: background .12s ease, color .12s ease;
+}
+
+.dropdown-content a:hover {
+  background: rgba(122, 162, 247, 0.12);
+  color: #7aa2f7;
+}
+
+/* Animación sutil */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+.container,
+.toolbar {
+  position: relative;
 }
 
 #editor {
@@ -44,9 +156,3 @@ body,
   font-size: 190%;
   color: #B78E00;
 }
-
-/* .ace_editor, */
-/* .ace_gutter, */
-/* .ace_content { */
-/*   background: transparent !important; */
-/* } */

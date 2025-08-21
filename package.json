@@ -5,7 +5,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "electron .",
+    "start": "electron .",
+    "dev": "electronmon .",
     "dist": "electron-builder",
     "package-mac": "electron-packager . --overwrite --platform=darwin --arch=x64 --icon=assets/icons/mac/icon.icns --prune=true --out=release-builds",
     "package-win": "electron-packager . python-editor --overwrite --asar=true --platform=win32 --arch=ia32 --icon=assets/icons/win/icono.ico --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=\"Electron Tutorial App\"",
@@ -16,7 +17,9 @@
   "license": "ISC",
   "dependencies": {
     "child_process": "^1.0.2",
-    "mica-electron": "^1.5.16"
+    "electronmon": "^2.0.3",
+    "mica-electron": "^1.5.16",
+    "path": "^0.12.7"
   },
   "devDependencies": {
     "electron": "^18.2.4",

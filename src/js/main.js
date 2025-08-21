@@ -1,145 +1,115 @@
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
-const { spawn } = require("child_process");
+// src/js/main.js
+(() => {
+  'use strict';
 
-const table = document.getElementById("content");
-const editorEl = document.getElementById("editor");
+  // ====== Config ======
+  const RUN_DEBOUNCE_MS = 300;
+  const MAX_OUTPUT_LEN = 200000;
+  const DEFAULT_LANG = localStorage.getItem('editor.lang') || 'python';
 
-// Archivo de trabajo (usa carpeta temporal del SO)
-const ROUTE = path.join(os.tmpdir(), "hola.py");
+  // ====== Estado ======
+  let editor;                // instancia de Ace
+  let CURRENT_LANG = DEFAULT_LANG;     // 'python' | 'javascript'
+  let debounceTimer = null;
 
-// Configuraciones
-const RUN_DEBOUNCE_MS = 300;     // evita ejecutar en cada tecla
-const MAX_EXEC_MS = 5000;        // corta bucles infinitos (5s)
-const MAX_OUTPUT_LEN = 200_000;  // evita reventar la UI
-let currentChild = null;
-let runTimer = null;
-let debounceTimer = null;
+  // ====== UI ======
+  const outEl = document.getElementById('content');
 
-window.onload = () => {
-  editor.setValue("", 0);
-  editor.focus();
-  ensureFile(ROUTE);
-};
-
-// --- Utilidades ---
-function ensureFile(file) {
-  if (!fs.existsSync(file)) fs.writeFileSync(file, "");
-}
-
-function saveEditorToFile() {
-  const code = editor.getValue();
-  fs.writeFileSync(ROUTE, code, "utf8");
-}
-
-function setOutput(text) {
-  // Para salida larga, usar <pre> o <textarea>. Aquí plaintext:
-  table.innerText = text.slice(0, MAX_OUTPUT_LEN);
-}
-
-function appendOutput(chunk) {
-  const curr = table.innerText || "";
-  const next = (curr + chunk).slice(0, MAX_OUTPUT_LEN);
-  table.innerText = next;
-}
-
-function killCurrent() {
-  if (currentChild) {
-    try { currentChild.kill("SIGKILL"); } catch { }
-    currentChild = null;
+  function setOutput(txt) { outEl.innerText = (txt || '').slice(0, MAX_OUTPUT_LEN); }
+  function appendOutput(chunk) {
+    outEl.innerText = (outEl.innerText + (chunk || '')).slice(0, MAX_OUTPUT_LEN);
   }
-  if (runTimer) {
-    clearTimeout(runTimer);
-    runTimer = null;
+
+  // ====== Rutas temp (desde preload) ======
+  const ROUTES = {
+    python: window.runner.tmpPath('editor_python.py'),
+    javascript: window.runner.tmpPath('editor_js.js'),
+  };
+
+  // ====== Lenguaje ======
+  function setLanguage(event, lang = 'python') {
+    if (event.classList && !event.classList.contains('active')) {
+      const buttons = document.querySelectorAll('.lang-button');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      event.classList.add('active');
+    };
+
+    document.getElementById('lang-notifier').innerText = lang;
+
+
+    CURRENT_LANG = (lang === 'javascript') ? 'javascript' : 'python';
+    localStorage.setItem('editor.lang', CURRENT_LANG);
+    editor.session.setMode(
+      CURRENT_LANG === 'javascript' ? 'ace/mode/javascript' : 'ace/mode/python'
+    );
+    runCurrent();
   }
-}
+  window.setLanguage = setLanguage;
 
-// --- Ejecución controlada ---
-function runPython() {
-  // 1) Guardamos el archivo
-  saveEditorToFile();
+  // ====== Runners ======
+  function runPython() {
+    window.runner.saveFile(ROUTES.python, editor.getValue());
+    setOutput('');
+    window.runner.runPython(
+      ROUTES.python,
+      (chunk) => appendOutput(chunk),
+      (code) => { if (code !== 0) appendOutput(`\n⚠️Código ${code}`); },
+      5000
+    );
+  }
 
-  table.textContent = "";
+  function runJS() {
+    setOutput('');
+    const res = window.runner.runJS(editor.getValue(), 5000);
+    appendOutput(res.out);
+  }
 
-  // 2) Cancelamos ejecución previa (si existiera)
-  killCurrent();
+  function runCurrent() {
+    if (CURRENT_LANG === 'javascript') runJS();
+    else runPython();
+  }
+  window.runCurrent = runCurrent;
 
-  // 3) Limpiamos la salida
-  // setOutput("▶ Ejecutando…");
+  // ====== Debounce ======
+  function onEditorChange() {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(runCurrent, RUN_DEBOUNCE_MS);
+  }
 
-  // 4) Lanzamos Python con aislamiento básico y salida sin buffer
-  //    -I: modo aislado (ignora PYTHONPATH, site, etc.)
-  //    -u: unbuffered (streaming inmediato)
-  //    Activa faulthandler via env para mejores tracebacks.
-  const pyArgs = ["-I", "-u", ROUTE];
-  const env = { ...process.env, PYTHONFAULTHANDLER: "1" };
+  // ====== Init ======
+  window.addEventListener('DOMContentLoaded', () => {
+    ace.config.set('basePath', 'assets/');
+    ace.config.setModuleUrl('ace/mode/python', 'assets/mode-python.js');
+    ace.config.setModuleUrl('ace/snippets/python', 'assets/snippets/python.js');
+    ace.config.setModuleUrl('ace/mode/javascript', 'assets/mode-javascript.js');
+    ace.config.setModuleUrl('ace/mode/javascript_worker', 'assets/worker-javascript.js');
+    ace.config.setModuleUrl('ace/snippets/javascript', 'assets/snippets/javascript.js');
+    ace.config.setModuleUrl('ace/keyboard/vim', 'assets/ext-vim.js');
 
-  // En Linux/macOS puedes añadir límites de CPU/memoria:
-  // const shellCmd = `ulimit -t 3 -v 524288; exec python3 ${pyArgs.map(a => JSON.stringify(a)).join(" ")}`;
-  // const child = spawn("bash", ["-lc", shellCmd], { env });
+    editor = ace.edit('editor');
+    window.editor = editor;
 
-  // Portable (Windows/Linux/macOS) sin ulimit:
-  const child = spawn("python3", pyArgs, { env });
+    editor.setTheme('ace/theme/tokyo-night');
+    editor.setOptions({
+      enableBasicAutocompletion: true,
+      enableLiveAutocompletion: true,
+      enableSnippets: true
+    });
 
-  currentChild = child;
+    editor.setKeyboardHandler("ace/keyboard/vim");
 
-  // 5) Timeout anti-bucle infinito
-  runTimer = setTimeout(() => {
-    appendOutput("\n⏱️ Tiempo de ejecución excedido. Proceso cancelado.");
-    killCurrent();
-  }, MAX_EXEC_MS);
-
-  // 6) Streaming de salida
-  child.stdout.on("data", (data) => appendOutput(data.toString()));
-  child.stderr.on("data", (data) => appendOutput(data.toString()));
-
-  child.on("error", (err) => {
-    appendOutput(`\n❌ Error al iniciar Python: ${err.message}`);
-  });
-
-  child.on("close", (code, signal) => {
-    if (runTimer) { clearTimeout(runTimer); runTimer = null; }
-    currentChild = null;
-
-    if (signal === "SIGKILL") return; // ya mostramos mensaje de timeout
-    if (code === 0) {
-      // appendOutput("\n✅ Finalizado.");
-    } else {
-      appendOutput(`\n⚠️ Salió con código ${code}.`);
+    const vimModule = ace.require("ace/keyboard/vim");
+    const Vim = vimModule.Vim || (vimModule.CodeMirror && vimModule.CodeMirror.Vim);
+    if (Vim) {
+      Vim.map('kk', '<Esc>', 'insert');
     }
+
+    setLanguage(CURRENT_LANG);
+
+    editor.session.on('change', onEditorChange);
+
+    window.runner.ensureFile(ROUTES.python);
+    window.runner.ensureFile(ROUTES.javascript);
   });
-}
 
-// --- Debounce de ejecuciones en tipeo ---
-function debouncedRun() {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    runPython();
-  }, RUN_DEBOUNCE_MS);
-}
-
-// --- Eventos ---
-editorEl.addEventListener("keyup", debouncedRun);
-
-document.addEventListener("keydown", (event) => {
-  // Limpiar editor
-  if (event.ctrlKey && event.key.toLowerCase() === "q") {
-    editor.selectAll();
-    editor.removeLines();
-    setOutput("");
-  }
-
-  // Ejecutar manualmente con Ctrl+B (sin esperar debounce)
-  if (event.ctrlKey && event.key.toLowerCase() === "b") {
-    event.preventDefault();
-    debouncedRun(); // reusa la misma ruta (guarda + run)
-  }
-
-  // Cancelar ejecución con Ctrl+.
-  if (event.ctrlKey && event.key === ".") {
-    event.preventDefault();
-    appendOutput("\n🛑 Cancelado por el usuario.");
-    killCurrent();
-  }
-});
+})();
